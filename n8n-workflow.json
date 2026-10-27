@@ -20,6 +20,15 @@
         "url": "=http://host.docker.internal:8080/process?target_width={{$json.target_width || 1200}}&target_height={{$json.target_height || 630}}",
         "sendBinaryData": true,
         "contentType": "multipart-form-data",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Service-Token",
+              "value": "={{$env.CAPTION_CROP_SERVICE_TOKEN}}"
+            }
+          ]
+        },
         "bodyParameters": {
           "parameters": [
             {
