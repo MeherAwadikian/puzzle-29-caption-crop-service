@@ -1,0 +1,90 @@
+{
+  "name": "Image Caption + Crop (puzzle #29)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "caption-crop",
+        "options": {}
+      },
+      "id": "a1a1a1a1-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-400, 0],
+      "webhookId": "caption-crop-trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:8080/process?target_width={{$json.target_width || 1200}}&target_height={{$json.target_height || 630}}",
+        "sendBinaryData": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 65000
+        }
+      },
+      "id": "a1a1a1a1-0002-4000-8000-000000000002",
+      "name": "Caption + Crop Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-160, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{\n  json: {\n    caption: item.caption,\n    caption_available: item.caption_available,\n    cropped_width: item.cropped_width,\n    cropped_height: item.cropped_height\n  },\n  binary: {\n    cropped_image: {\n      data: item.cropped_image_base64,\n      mimeType: item.cropped_image_mime,\n      fileName: 'cropped.jpg'\n    }\n  }\n}];"
+      },
+      "id": "a1a1a1a1-0003-4000-8000-000000000003",
+      "name": "Unpack Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "a1a1a1a1-0004-4000-8000-000000000004",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [320, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Caption + Crop Service", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Caption + Crop Service": {
+      "main": [
+        [
+          { "node": "Unpack Result", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Unpack Result": {
+      "main": [
+        [
+          { "node": "Respond to Webhook", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
