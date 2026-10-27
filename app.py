@@ -29,13 +29,16 @@ import numpy as np
 
 app = FastAPI(title="caption-crop-service")
 
-# Shared-secret auth for n8n -> this service. Generated once per process start
-# if not pinned via env, and logged so the n8n HTTP Request node's header can
-# be set to match. Keeps this from being an open internal SSRF/IDOR target.
-SERVICE_TOKEN = os.environ.get("SERVICE_TOKEN") or secrets.token_urlsafe(24)
-if not os.environ.get("SERVICE_TOKEN"):
-    print(f"[caption-crop-service] no SERVICE_TOKEN set, generated one for this "
-          f"run: {SERVICE_TOKEN}")
+# Shared-secret auth for n8n -> this service. Must be set via env (never
+# generated-and-logged — a logged secret ends up in log aggregation/stdout
+# capture just as easily as a hardcoded one). Keeps this from being an open
+# internal SSRF/IDOR target.
+SERVICE_TOKEN = os.environ.get("SERVICE_TOKEN")
+if not SERVICE_TOKEN:
+    raise RuntimeError(
+        "SERVICE_TOKEN env var must be set (e.g. `SERVICE_TOKEN=$(openssl rand "
+        "-base64 24) uvicorn app:app ...`) — refusing to start with no auth."
+    )
 
 # Isolated scratch dir: the claude CLI subprocess's Read tool is scoped to
 # exactly this directory, so even a prompt-injection payload hidden inside an
